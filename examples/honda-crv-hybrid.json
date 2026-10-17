@@ -1,0 +1,131 @@
+{
+  "home_zip": "30303",
+  "db_path": "data/tracker.db",
+  "vehicle": {
+    "label": "CR-V Hybrid",
+    "make": "Honda",
+    "model": "CR-V",
+    "trims": [
+      "Sport Touring",
+      "Sport-L"
+    ],
+    "other_trims": [
+      "EX-L",
+      "EX",
+      "LX"
+    ],
+    "vin_prefixes": [],
+    "price_range": [
+      10000,
+      60000
+    ],
+    "certified_phrases": [
+      "honda certified",
+      "honda true certified"
+    ],
+    "icon": "🚙",
+    "ntfy_tag": "blue_car"
+  },
+  "body": {},
+  "features": {
+    "awd": {
+      "label": "All-wheel drive",
+      "short": "AWD",
+      "yes": [
+        "awd",
+        "all[- ]wheel drive"
+      ],
+      "no": [
+        "fwd",
+        "front[- ]wheel drive"
+      ],
+      "required": true
+    },
+    "sunroof": {
+      "label": "Moonroof",
+      "short": "Roof",
+      "yes": [
+        "moonroof",
+        "sunroof"
+      ],
+      "value": 800
+    }
+  },
+  "criteria": {
+    "min_year": 2023,
+    "max_year": null,
+    "max_miles": 40000,
+    "max_price": 38000
+  },
+  "fair_value": {
+    "base": {
+      "2023": 31000,
+      "2024": 33500,
+      "2025": 36000
+    },
+    "per_year": 2500,
+    "ref_miles": 15000,
+    "per_mile": 0.15,
+    "cpo": 800,
+    "accident": 3000,
+    "fee_estimate": 799,
+    "trip_per_mile": 0.5
+  },
+  "distances": {
+    "online": 0,
+    "atlanta": 5,
+    "decatur": 8,
+    "marietta": 20,
+    "kennesaw": 28,
+    "lithia springs": 20,
+    "morrow": 15,
+    "gainesville": 55,
+    "athens": 70,
+    "macon": 85,
+    "birmingham": 150,
+    "greenville": 145
+  },
+  "state_distances": {
+    "GA": 120,
+    "TN": 220,
+    "AL": 180,
+    "SC": 200,
+    "NC": 260,
+    "FL": 350,
+    "KY": 380,
+    "VA": 450,
+    "MS": 350
+  },
+  "imap": {
+    "host": "imap.gmail.com",
+    "mailbox": "\"[Gmail]/All Mail\"",
+    "lookback_days": 3,
+    "accounts": [
+      {
+        "user_env": "IMAP_USER",
+        "password_env": "IMAP_PASSWORD",
+        "gmail_query": "in:anywhere -in:trash from:(facebookmail.com OR cargurus.com OR cars.com OR autotrader.com OR carvana.com OR carmax.com OR truecar.com OR edmunds.com) (\"cr-v\" OR crv OR marketplace)"
+      }
+    ]
+  },
+  "ntfy": {
+    "server": "https://ntfy.sh",
+    "topic_env": "NTFY_TOPIC"
+  },
+  "ranking": {
+    "unknown_distance": 150,
+    "unknown_miles": 1000,
+    "unknown_feature": 1500,
+    "missing_feature": 6000,
+    "wrong_body": 6000,
+    "stale_days": 10,
+    "expire_days": 30
+  },
+  "web": {
+    "port": 8095
+  },
+  "alerts": {
+    "min_price_drop": 250,
+    "good_deal_score": 500
+  }
+}

@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14532d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Car Deals</title>
+<link rel="icon" id="favicon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
+<style>
+:root {
+  --bg: #f4f5f2; --card: #ffffff; --ink: #1b1f1a; --muted: #636b60; --line: #e2e5df;
+  --accent: #14532d; --accent-ink: #ffffff; --good: #15803d; --good-bg: #dcfce7;
+  --ok: #a16207; --ok-bg: #fef3c7; --bad: #b91c1c; --bad-bg: #fee2e2; --chip: #eef0ec;
+  --star: #d97706; --shadow: 0 1px 2px rgba(0,0,0,.06), 0 1px 8px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111410; --card: #1a1e19; --ink: #e8ebe5; --muted: #9aa396; --line: #2b3029;
+    --accent: #4ade80; --accent-ink: #0b1a0f; --good: #4ade80; --good-bg: #13301d;
+    --ok: #fbbf24; --ok-bg: #3a2e0c; --bad: #f87171; --bad-bg: #3b1515; --chip: #252a23;
+    --star: #fbbf24; --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding-bottom: 96px; }
+header { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line);
+  padding: calc(10px + env(safe-area-inset-top)) 16px 0; }
+.top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+h1 { font-size: 19px; margin: 0; letter-spacing: -.01em; }
+.sub { color: var(--muted); font-size: 12.5px; }
+.tabs { display: flex; gap: 4px; margin-top: 10px; overflow-x: auto; scrollbar-width: none; }
+.tab { border: 0; background: none; color: var(--muted); font: inherit; font-weight: 600; padding: 8px 10px;
+  border-bottom: 2px solid transparent; white-space: nowrap; cursor: pointer; }
+.tab.on { color: var(--ink); border-bottom-color: var(--accent); }
+.tab .n { font-weight: 500; color: var(--muted); font-size: 12px; margin-left: 3px; }
+.tools { display: flex; gap: 8px; padding: 10px 16px 0; flex-wrap: wrap; align-items: center; }
+.tools select, .tools label { font: inherit; font-size: 13px; }
+.tools select { padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+.toggle { display: inline-flex; gap: 6px; align-items: center; background: var(--chip); padding: 6px 10px;
+  border-radius: 999px; cursor: pointer; user-select: none; }
+.toggle input { margin: 0; accent-color: var(--accent); }
+main { padding: 10px 16px; max-width: 760px; margin: 0 auto; }
+.banner { background: var(--bad-bg); color: var(--bad); padding: 10px 12px; border-radius: 10px; margin-bottom: 10px; font-size: 13.5px; }
+.card { background: var(--card); border-radius: 14px; box-shadow: var(--shadow); border: 1px solid var(--line);
+  margin-bottom: 10px; overflow: hidden; }
+.row { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; padding: 12px; cursor: pointer; align-items: start; }
+.rank { font-weight: 700; font-size: 18px; color: var(--muted); text-align: center; padding-top: 2px; font-variant-numeric: tabular-nums; }
+.title { font-weight: 650; }
+.title .star { color: var(--star); }
+.meta { color: var(--muted); font-size: 13px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; }
+.price { text-align: right; }
+.price b { display: block; font-size: 17px; font-variant-numeric: tabular-nums; }
+.drop { color: var(--good); font-size: 12px; font-weight: 600; }
+.rise { color: var(--bad); font-size: 12px; font-weight: 600; }
+.badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.b-good { background: var(--good-bg); color: var(--good); }
+.b-ok { background: var(--ok-bg); color: var(--ok); }
+.b-bad { background: var(--bad-bg); color: var(--bad); }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.chip { font-size: 11.5px; background: var(--chip); color: var(--muted); padding: 2px 7px; border-radius: 6px; }
+.chip.yes { background: var(--good-bg); color: var(--good); }
+.chip.warn { background: var(--ok-bg); color: var(--ok); }
+.chip.no { background: var(--bad-bg); color: var(--bad); }
+.chip.fix { cursor: pointer; text-decoration: underline dotted; }
+.report { background: var(--bad-bg); color: var(--bad); border-radius: 8px; padding: 6px 8px; font-size: 13px; margin-top: 8px; }
+.log { margin-top: 18px; }
+.log h2 { font-size: 15px; margin: 0 0 6px; }
+.log .item { border-bottom: 1px solid var(--line); padding: 8px 0; font-size: 13.5px; }
+.st { font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 6px; margin-left: 4px; }
+.st.open { background: var(--ok-bg); color: var(--ok); }
+.st.fixed { background: var(--good-bg); color: var(--good); }
+.st.false-alarm { background: var(--chip); color: var(--muted); }
+.detail { border-top: 1px solid var(--line); padding: 12px; display: none; }
+.card.open .detail { display: block; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+.kv { background: var(--chip); border-radius: 10px; padding: 8px; }
+.kv .k { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.kv .v { font-weight: 650; font-variant-numeric: tabular-nums; }
+.notes { font-size: 13.5px; white-space: pre-wrap; margin: 8px 0; }
+.small { font-size: 12px; color: var(--muted); }
+.actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+button.btn, a.btn { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 12px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--card); color: var(--ink); text-decoration: none; cursor: pointer; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.danger { color: var(--bad); }
+svg.spark { width: 100%; height: 60px; display: block; margin: 4px 0; }
+.empty { text-align: center; color: var(--muted); padding: 40px 0; }
+.fab { position: fixed; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom)); width: 56px; height: 56px;
+  border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink); font-size: 30px; line-height: 1;
+  box-shadow: 0 4px 14px rgba(0,0,0,.25); cursor: pointer; }
+dialog { border: 0; border-radius: 16px; padding: 0; width: min(560px, calc(100vw - 24px)); background: var(--card); color: var(--ink); }
+dialog::backdrop { background: rgba(0,0,0,.45); }
+dialog form { padding: 16px; }
+dialog h2 { margin: 0 0 10px; font-size: 17px; }
+.f { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.f label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 3px; }
+.f label.wide { grid-column: 1 / -1; }
+.f input, .f select, .f textarea { font: inherit; font-size: 15px; padding: 8px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--ink); width: 100%; }
+.f textarea { min-height: 70px; resize: vertical; }
+.dlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.err { color: var(--bad); font-size: 13px; min-height: 1em; margin-top: 6px; }
+.toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); background: var(--ink); color: var(--bg);
+  padding: 8px 14px; border-radius: 10px; font-size: 13.5px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.toast.show { opacity: 1; }
+table.offers { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.offers td { padding: 8px 4px; border-bottom: 1px solid var(--line); }
+table.offers td.amt { text-align: right; font-weight: 650; font-variant-numeric: tabular-nums; }
+.help { font-size: 13px; color: var(--muted); line-height: 1.5; }
+.help b { color: var(--ink); }
+@media (max-width: 380px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <h1 id="heading">Deals</h1>
+    <span class="sub" id="scan"></span>
+  </div>
+  <nav class="tabs" id="tabs"></nav>
+</header>
+<div class="tools" id="tools">
+  <select id="sort" aria-label="Sort">
+    <option value="rank">Best deal</option>
+    <option value="price">Lowest price</option>
+    <option value="allin">Lowest all-in</option>
+    <option value="miles">Lowest miles</option>
+    <option value="new">Newest found</option>
+    <option value="drop">Biggest price drop</option>
+  </select>
+  <label class="toggle" id="mustToggle"><input type="checkbox" id="mustOnly"> <span id="mustLabel">Must-haves confirmed</span></label>
+  <label class="toggle"><input type="checkbox" id="hideStale"> Hide stale</label>
+</div>
+<main id="main"></main>
+<button class="fab" id="add" aria-label="Add listing">+</button>
+
+<dialog id="edit">
+  <form method="dialog" id="editForm">
+    <h2 id="editTitle">Edit listing</h2>
+    <div class="f" id="editFields"></div>
+    <div class="err" id="editErr"></div>
+    <div class="dlg-actions">
+      <button class="btn" value="cancel" formnovalidate>Cancel</button>
+      <button class="btn primary" id="editSave" value="save">Save</button>
+    </div>
+  </form>
+</dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const fmt$ = n => n == null ? "?" : "$" + Math.round(n).toLocaleString();
+const fmtC = n => n == null ? "?" : "$" + Number(n).toFixed(2);  // per-mile rates
+const fmtN = n => n == null ? "?" : Math.round(n).toLocaleString();
+const sign = n => (n >= 0 ? "+" : "−") + "$" + Math.abs(Math.round(n)).toLocaleString();
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const store = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+                set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+
+let S = { listings: [], offers: [], config: null };
+const C = () => S.config;  // vehicle, body, features, criteria... from config.json via /api/state
+let tab = location.hash.slice(1) || store.get("tab", "top");  // e.g. /#flagged
+const open = new Set();
+
+const TABS = [
+  ["top", "Ranked", l => l.status === "active"],
+  ["starred", "★ Starred", l => l.starred && l.status !== "passed"],
+  ["archive", "Archived", l => l.status === "archived"],
+  ["passed", "Passed", l => l.status === "passed"],
+  ["flagged", "⚑ Flagged", l => l.status === "flagged"],
+  ["trade", "Trade-in", null],  // shown only when config has "trade_in"
+  ["help", "How it ranks", null],
+];
+
+async function api(path, body) {
+  const r = await fetch(path, body === undefined ? {} : {
+    method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || j.ok === false) throw new Error(j.error || r.statusText);
+  return j;
+}
+
+function applyConfig() {
+  const v = C().vehicle;
+  document.title = `${v.label} deals`;
+  $("#heading").textContent = `${v.icon} ${v.label} deals`;
+  $("#favicon").href = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${v.icon}</text></svg>`;
+  const must = mustHaves();
+  $("#mustToggle").style.display = must.length ? "" : "none";
+  $("#mustLabel").textContent = must.length === 1 ? `${C().features[must[0]].short} confirmed` : "Must-haves confirmed";
+}
+
+// Feature keys marked "required" in config.json.
+const mustHaves = () => Object.entries(C().features).filter(([, f]) => f.required).map(([k]) => k);
+const feat = (l, k) => (l.features || {})[k] ?? null;
+
+async function load() {
+  try { S = await api("/api/state"); applyConfig(); render(); }
+  catch (e) { $("#main").innerHTML = `<div class="banner">Couldn't load: ${esc(e.message)}</div>`; }
+}
+
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("show"), 1800);
+}
+
+function ago(iso) {
+  if (!iso) return "never";
+  const m = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (m < 60) return `${m}m ago`;
+  if (m < 48 * 60) return `${Math.round(m / 60)}h ago`;
+  return `${Math.round(m / 1440)}d ago`;
+}
+
+function badgeClass(s) { return s >= 500 ? "b-good" : s >= 0 ? "b-ok" : "b-bad"; }
+
+function spark(h) {
+  if (!h || h.length < 2) return "";
+  const W = 300, H = 60, P = 6, xs = h.map(p => new Date(p.date).getTime()), ys = h.map(p => p.price);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs) || x0 + 1, y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const X = x => P + (W - 2 * P) * (x1 === x0 ? 1 : (x - x0) / (x1 - x0));
+  const Y = y => y1 === y0 ? H / 2 : P + (H - 2 * P) * (1 - (y - y0) / (y1 - y0));
+  let d = "";
+  h.forEach((p, i) => { const x = X(xs[i]), y = Y(p.price);
+    d += i ? ` H${x.toFixed(1)} V${y.toFixed(1)}` : `M${x.toFixed(1)} ${y.toFixed(1)}`; });
+  const dots = h.map((p, i) => `<circle cx="${X(xs[i]).toFixed(1)}" cy="${Y(p.price).toFixed(1)}" r="3" fill="var(--accent)"><title>${p.date}: ${fmt$(p.price)}</title></circle>`).join("");
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke"/>${dots}</svg>
+    <div class="small">${h.map(p => `${p.date.slice(5)} ${fmt$(p.price)}`).join(" → ")}</div>`;
+}
+
+function where(l) {
+  const place = [l.dealer, l.city].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(" · ") || l.source;
+  const dist = l.distance == null ? "" : l.distance === 0 ? " · delivers" : ` · ${l.distance} mi`;
+  return place + dist;
+}
+
+function chips(l) {
+  const c = [], F = C().features, shown = new Set();
+  for (const [k, f] of Object.entries(F)) {
+    const v = feat(l, k);
+    if (f.required) {
+      c.push(v === true ? `<span class="chip yes">${esc(f.short)}</span>` : v === false ? `<span class="chip no">No ${esc(f.short)}</span>`
+        : `<span class="chip warn fix" data-act="edit" title="Tap to fill in">${esc(f.short)} ?</span>`);
+      shown.add(`${f.short}?`); shown.add(`no ${f.short}`);
+    } else if (v) c.push(`<span class="chip yes">${esc(f.short)}</span>`);
+  }
+  if (l.cpo) c.push(`<span class="chip yes">CPO</span>`);
+  if (l.accident === 1) c.push(`<span class="chip no">Accident</span>`);
+  if (l.accident === 0) c.push(`<span class="chip">No accidents</span>`);
+  if (l.fees_included) c.push(`<span class="chip">Fees incl.</span>`);
+  for (const f of l.flags) if (!shown.has(f))
+    c.push(f.endsWith("?") ? `<span class="chip warn fix" data-act="edit" title="Tap to fill in">${esc(f)}</span>` : `<span class="chip warn">${esc(f)}</span>`);
+  c.push(`<span class="chip">${esc(l.source)}</span>`);
+  return c.join("");
+}
+
+function card(l) {
+  const delta = l.price - l.first_price;
+  const trend = delta < 0 ? `<div class="drop">▼ ${fmt$(-delta)}</div>` : delta > 0 ? `<div class="rise">▲ ${fmt$(delta)}</div>` : "";
+  const isOpen = open.has(l.key);
+  const id = encodeURIComponent(l.key);
+  return `<article class="card${isOpen ? " open" : ""}" data-key="${esc(l.key)}">
+  <div class="row" data-act="toggle">
+    <div class="rank">${l.rank ?? "–"}</div>
+    <div style="min-width:0">
+      <div class="title">${l.starred ? '<span class="star">★</span> ' : ""}${l.year ?? "?"} ${esc(C().vehicle.label)} · ${l.miles == null ? "? mi" : fmtN(l.miles) + " mi"}</div>
+      <div class="meta">${esc(where(l))}</div>
+      <div class="chips">${chips(l)}</div>
+    </div>
+    <div class="price"><b>${fmt$(l.price)}</b>${trend}
+      <div class="badge ${badgeClass(l.rank_score)}" title="Ranking score">${sign(l.rank_score)}</div></div>
+  </div>
+  <div class="detail">
+    <div class="grid">
+      <div class="kv"><div class="k">All-in</div><div class="v">${fmt$(l.all_in)}</div></div>
+      <div class="kv"><div class="k">Fair value</div><div class="v">${fmt$(l.fair)}</div></div>
+      <div class="kv"><div class="k">Deal score</div><div class="v">${sign(l.score)}</div></div>
+    </div>
+    ${spark(l.history)}
+    ${l.reports.map(r => `<div class="report">⚑ ${esc(r)}</div>`).join("")}
+    ${l.notes ? `<div class="notes">${esc(l.notes)}</div>` : ""}
+    <div class="small">Found ${l.first_seen} · last seen ${l.last_seen}${l.days_since_seen ? ` (${l.days_since_seen}d ago)` : " (today)"}${l.vin ? ` · VIN ${esc(l.vin)}` : ""}</div>
+    <div class="actions">
+      ${l.url ? `<a class="btn primary" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">Open listing ↗</a>` : ""}
+      ${l.vin ? `<a class="btn" href="https://www.carfax.com/vehicle/${esc(l.vin)}" target="_blank" rel="noopener noreferrer">Carfax ↗</a>` : ""}
+      ${l.status === "active" ? `<button class="btn" data-act="seen">✓ Still for sale</button>` : ""}
+      <button class="btn" data-act="star">${l.starred ? "☆ Unstar" : "★ Star"}</button>
+      <button class="btn" data-act="edit">Edit</button>
+      ${l.status === "active"
+        ? `<button class="btn" data-act="archive">Sold / gone</button><button class="btn danger" data-act="pass">Not interested</button>`
+        : l.status === "flagged"
+        ? `<button class="btn danger" data-act="remove">Remove</button><button class="btn" data-act="restore">Not wrong — restore</button>`
+        : `<button class="btn" data-act="restore">Restore</button>`}
+      ${l.status !== "flagged" ? `<button class="btn danger" data-act="flag">⚑ Wrong info</button>` : ""}
+    </div>
+  </div>
+</article>`;
+}
+
+function sorted(rows) {
+  const by = $("#sort").value;
+  const k = {
+    rank: l => -l.rank_score, price: l => l.price, allin: l => l.all_in, miles: l => l.miles ?? 1e9,
+    new: l => -new Date(l.first_seen).getTime(), drop: l => l.price - l.first_price,
+  }[by];
+  return [...rows].sort((a, b) => k(a) - k(b));
+}
+
+function render() {
+  const tabs = TABS.filter(([id]) => id !== "trade" || C().trade_in);
+  if (!tabs.some(t => t[0] === tab)) tab = "top";
+  const counts = Object.fromEntries(tabs.filter(t => t[2]).map(([id, , f]) => [id, S.listings.filter(f).length]));
+  $("#tabs").innerHTML = tabs.map(([id, name]) =>
+    `<button class="tab${tab === id ? " on" : ""}" data-tab="${id}">${name}${counts[id] != null ? `<span class="n">${counts[id]}</span>` : ""}</button>`).join("");
+  $("#tabs .on")?.scrollIntoView({ inline: "nearest", block: "nearest" });
+  $("#scan").textContent = `scanned ${ago(S.last_scan)}`;
+  $("#tools").style.display = TABS.find(t => t[0] === tab)[2] ? "" : "none";
+  const banner = S.failing ? `<div class="banner">Last email scan failed. Check data/scan.log on the server.</div>` : "";
+
+  if (tab === "trade") return renderTrade(banner);
+  if (tab === "help") return renderHelp(banner);
+
+  let rows = S.listings.filter(TABS.find(t => t[0] === tab)[2]);
+  if ($("#mustOnly").checked) rows = rows.filter(l => mustHaves().every(k => feat(l, k) === true));
+  if ($("#hideStale").checked) rows = rows.filter(l => !l.stale);
+  rows = sorted(rows);
+  $("#main").innerHTML = banner + (rows.length ? rows.map(card).join("") : `<div class="empty">Nothing here.</div>`)
+    + (tab === "flagged" ? reportLog() : "");
+}
+
+function reportLog() {
+  const R = S.reports;
+  return `<div class="log card" style="padding:14px"><h2>Wrong-info log</h2>
+    <div class="small" style="margin-bottom:6px">Every flag is kept here with a snapshot of what the tracker stored and the alert email it came from, so the parser can be fixed. Removing a flagged listing hides it for good; its report stays.</div>
+    ${R.length ? R.map(r => `<div class="item"><b>${esc(r.reason)}</b><span class="st ${esc(r.status)}">${esc(r.status)}</span>
+      <div>${esc(r.car)}</div>${r.note ? `<div class="small">“${esc(r.note)}”</div>` : ""}
+      <div class="small">${r.date} · #${r.id}${r.resolution ? " · " + esc(r.resolution) : ""}</div></div>`).join("")
+      : `<div class="empty" style="padding:16px 0">No reports yet.</div>`}</div>`;
+}
+
+function reasons() {
+  const c = C(), out = [];
+  if (c.vehicle.trims.length) out.push(`Not a ${c.vehicle.trims.join(" / ")}`);
+  out.push(`Not a ${c.vehicle.make} ${c.vehicle.model}`, "Wrong price", "Wrong miles", "Wrong year", "Wrong location");
+  if (c.body.want.length) out.push(`Not a ${c.body.want.map(k => c.body.styles[k]).join(" / ")}`);
+  for (const k of mustHaves()) out.push(`Wrong ${c.features[k].label}`);
+  out.push("Duplicate of another listing", "Link goes to a different car", "Other");
+  return out;
+}
+function flagListing(l) {
+  const R = reasons();
+  openForm(`What's wrong with this ${l.year ?? ""} · ${fmt$(l.price)}?`, [
+    ["reason", "What's wrong", "select", R[0], true, null, R.map(r => [r, r])],
+    ["note", "Details (what the listing actually says)", "textarea", "", true],
+  ], v => api("/api/listings/" + encodeURIComponent(l.key) + "/flag", v), "Flagged — moved to ⚑ Flagged");
+}
+
+function renderTrade(banner) {
+  const o = S.offers, t = C().trade_in;
+  $("#main").innerHTML = banner + `<div class="card" style="padding:14px">
+    <div class="title">${esc(t.label)} offers</div>
+    ${t.note ? `<div class="small" style="margin:4px 0 10px">${esc(t.note)}</div>` : ""}
+    ${o.length ? `<table class="offers">${o.map(x => `<tr><td>${esc(x.buyer)}<div class="small">${x.date}${x.notes ? " · " + esc(x.notes) : ""}</div></td><td class="amt">${fmt$(x.amount)}</td></tr>`).join("")}</table>` : `<div class="empty">No offers logged yet.</div>`}
+    <div class="actions"><button class="btn primary" id="addOffer">Log an offer</button></div></div>`;
+  $("#addOffer").onclick = () => openForm("Log trade-in offer", [
+    ["buyer", "Buyer (CarMax, Carvana…)", "text", "", true], ["amount", "Offer $", "number", "", false, "decimal"],
+    ["notes", "Notes", "text", "", true]], v => api("/api/offers", v), "Offer saved");
+}
+
+function renderHelp(banner) {
+  const c = C(), r = c.ranking, fv = c.fair_value, F = Object.values(c.features);
+  const extras = F.filter(f => f.value).map(f => `+${fmt$(f.value)} ${esc(f.short)}`)
+    .concat(fv.cpo ? [`+${fmt$(fv.cpo)} CPO`] : [], fv.accident ? [`−${fmt$(fv.accident)} accident`] : []);
+  const must = mustHaves().map(k => c.features[k]);
+  const body = c.body.want.map(k => c.body.styles[k]).join(" / ");
+  const cr = c.criteria;
+  $("#main").innerHTML = banner + `<div class="card" style="padding:14px"><div class="help">
+    <p><b>Fair value</b>: ${Object.entries(fv.base).map(([y, v]) => `${y} ${fmt$(v)}`).join(", ")} at ${fmtN(fv.ref_miles)} mi,
+      ${fmtC(fv.per_mile)} per mile over/under.${extras.length ? " " + extras.join(", ") + "." : ""}</p>
+    <p><b>All-in</b> = price + ${fmt$(fv.fee_estimate)} doc fee (unless included) + ${fmtC(fv.trip_per_mile)}/mi to go get it.</p>
+    <p><b>Deal score</b> = fair value − all-in. Positive = priced under fair.</p>
+    <p><b>Ranking score</b> = deal score, but pessimistic about anything the alert email didn't say:
+      ${must.length ? `unknown ${must.map(f => esc(f.label)).join(" / ")} −${fmt$(r.unknown_feature)} each, ` : ""}unknown miles −${fmt$(r.unknown_miles)},
+      unknown location counted as ${r.unknown_distance} mi away${must.length ? `, confirmed missing ${must.map(f => esc(f.short)).join(" / ")} −${fmt$(r.missing_feature)}` : ""}${body ? `, not a ${esc(body)} −${fmt$(r.wrong_body ?? r.missing_feature)}` : ""}.
+      Fix an unknown with <b>Edit</b> and it re-ranks.</p>
+    <p><b>Staying current</b>: every alert email that mentions a car again refreshes its price and "last seen".
+      After ${r.stale_days} days unseen it's marked stale; tap <b>✓ Still for sale</b> after checking the listing to reset it.
+      After ${r.expire_days} days unseen it moves to Archived automatically (starred cars never do), and comes back if an alert shows it again.</p>
+    <p><b>Not interested</b> hides a car for good; later alerts update it quietly without pushing to your phone.</p>
+    <p>Criteria: ${cr.min_year}${cr.max_year ? "–" + cr.max_year : "+"} ${esc(c.vehicle.make)} ${esc(c.vehicle.model)}${c.vehicle.trims.length ? " " + c.vehicle.trims.map(esc).join(" / ") : ""}${body ? ", " + esc(body) : ""},
+      ≤${fmtN(cr.max_miles)} mi${cr.max_price ? `, ≤${fmt$(cr.max_price)}` : ""}${must.length ? ", " + must.map(f => esc(f.label)).join(", ") : ""}.
+      Edit <code>config.json</code> on the server to change any of these numbers.</p>
+  </div></div>`;
+}
+
+// --- forms ---------------------------------------------------------------------------
+let formSubmit = null;
+function openForm(title, fields, submit, okMsg) {
+  $("#editTitle").textContent = title;
+  $("#editErr").textContent = "";
+  $("#editFields").innerHTML = fields.map(([name, label, type, val, wide, mode, opts]) => {
+    const v = val ?? "";
+    let input;
+    if (type === "select") input = `<select name="${name}">${opts.map(([ov, ol]) => `<option value="${ov}"${String(ov) === String(v) ? " selected" : ""}>${ol}</option>`).join("")}</select>`;
+    else if (type === "textarea") input = `<textarea name="${name}">${esc(v)}</textarea>`;
+    else input = `<input name="${name}" type="${type === "number" ? "text" : type}" ${mode ? `inputmode="${mode}"` : ""} value="${esc(v)}">`;
+    return `<label class="${wide ? "wide" : ""}">${label}${input}</label>`;
+  }).join("");
+  formSubmit = async () => {
+    const v = {};
+    for (const el of $("#editFields").querySelectorAll("[name]")) {
+      let x = el.value.trim();
+      if (el.tagName === "SELECT") x = x === "" ? null : x === "1" ? true : x === "0" ? false : x;
+      if (el.name.startsWith("f.")) (v.features ??= {})[el.name.slice(2)] = x;  // configured features
+      else v[el.name] = x;
+    }
+    await submit(v);
+    toast(okMsg);
+  };
+  $("#edit").showModal();
+}
+
+$("#editForm").addEventListener("submit", async e => {
+  if (e.submitter?.value !== "save") return;
+  e.preventDefault();
+  try { await formSubmit(); $("#edit").close(); load(); }
+  catch (err) { $("#editErr").textContent = err.message; }
+});
+
+const YN = [["", "Unknown"], ["1", "Yes"], ["0", "No"]];
+const yn = v => v == null ? "" : v ? "1" : "0";
+
+const featureFields = l => Object.entries(C().features).map(([k, f]) =>
+  [`f.${k}`, f.label, "select", yn(feat(l, k)), false, null, YN]);
+const bodyField = l => Object.keys(C().body.styles).length
+  ? [["body", "Body", "select", l.body ?? "", false, null, [["", "Unknown"], ...Object.entries(C().body.styles)]]] : [];
+
+function editListing(l) {
+  openForm(`Edit ${l.year ?? ""} · ${l.miles == null ? "?" : fmtN(l.miles)} mi`, [
+    ["price", "Price $", "number", l.price, false, "decimal"],
+    ["miles", "Miles", "number", l.miles, false, "decimal"],
+    ["distance", "Miles away (0 = delivered)", "number", l.distance, false, "decimal"],
+    ["year", "Year", "number", l.year, false, "numeric"],
+    ...featureFields(l),
+    ...bodyField(l),
+    ["cpo", "Certified pre-owned", "select", l.cpo ? "1" : "0", false, null, YN.slice(1)],
+    ["accident", "Accident", "select", yn(l.accident), false, null, YN],
+    ["fees_included", "Price includes fees", "select", l.fees_included ? "1" : "0", false, null, YN.slice(1)],
+    ["dealer", "Dealer", "text", l.dealer, true],
+    ["city", "City, ST", "text", l.city, true],
+    ["url", "Listing URL", "url", l.url, true],
+    ["vin", "VIN", "text", l.vin, true],
+    ["notes", "Notes", "textarea", l.notes, true],
+  ], v => api("/api/listings/" + encodeURIComponent(l.key), v), "Saved");
+}
+
+$("#add").onclick = () => openForm("Add a listing", [
+  ["text", "Paste listing text (optional)", "textarea", "", true],
+  ["price", "Price $", "number", "", false, "decimal"],
+  ["miles", "Miles", "number", "", false, "decimal"],
+  ["year", "Year", "number", "", false, "numeric"],
+  ["distance", "Miles away", "number", "", false, "decimal"],
+  ...featureFields({}),
+  ["city", "City, ST", "text", ""],
+  ["dealer", "Dealer", "text", "", true],
+  ["url", "Listing URL", "url", "", true],
+  ["notes", "Notes", "textarea", "", true],
+], async v => { const r = await api("/api/listings", v); open.add(r.key); }, "Added");
+
+// --- events --------------------------------------------------------------------------
+$("#tabs").addEventListener("click", e => {
+  const b = e.target.closest("[data-tab]"); if (!b) return;
+  tab = b.dataset.tab; store.set("tab", tab); history.replaceState(null, "", "#" + tab); render(); window.scrollTo(0, 0);
+});
+for (const id of ["sort", "mustOnly", "hideStale"]) {
+  const el = $("#" + id), saved = store.get(id, null);
+  if (saved != null) el[el.type === "checkbox" ? "checked" : "value"] = saved;
+  el.addEventListener("change", () => { store.set(id, el.type === "checkbox" ? el.checked : el.value); render(); });
+}
+
+$("#main").addEventListener("click", async e => {
+  const btn = e.target.closest("[data-act]"); if (!btn) return;
+  const cardEl = btn.closest(".card"); const key = cardEl?.dataset.key; if (!key) return;
+  const l = S.listings.find(x => x.key === key);
+  const act = btn.dataset.act;
+  if (act === "toggle") { open.has(key) ? open.delete(key) : open.add(key); cardEl.classList.toggle("open"); return; }
+  if (act === "edit") return editListing(l);
+  if (act === "flag") return flagListing(l);
+  if (act === "remove" && !confirm("Remove this listing for good? Its report stays in the log.")) return;
+  const change = { seen: { seen: true }, star: { starred: !l.starred }, archive: { status: "archived" },
+                   pass: { status: "passed" }, restore: { status: "active", seen: true },
+                   remove: { status: "removed" } }[act];
+  const msg = { seen: "Marked still for sale", star: l.starred ? "Unstarred" : "Starred", archive: "Archived",
+                pass: "Hidden", restore: "Restored", remove: "Removed" }[act];
+  try { await api("/api/listings/" + encodeURIComponent(key), change); toast(msg); load(); }
+  catch (err) { toast(err.message); }
+});
+
+document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+{
+  "home_zip": "30303",
+  "db_path": "data/tracker.db",
+  "vehicle": {
+    "label": "Frontier PRO-4X",
+    "make": "Nissan",
+    "model": "Frontier",
+    "trims": [
+      "PRO-4X"
+    ],
+    "other_trims": [
+      "PRO-X",
+      "SV",
+      "SL",
+      "SE"
+    ],
+    "vin_prefixes": [
+      "1N6"
+    ],
+    "price_range": [
+      15000,
+      90000
+    ],
+    "certified_phrases": [
+      "nissan certified"
+    ],
+    "icon": "🛻",
+    "ntfy_tag": "pickup_truck"
+  },
+  "body": {
+    "want": [
+      "crew"
+    ],
+    "styles": {
+      "crew": {
+        "label": "Crew Cab",
+        "patterns": [
+          "crew cab"
+        ]
+      },
+      "king": {
+        "label": "King Cab",
+        "patterns": [
+          "king cab"
+        ]
+      }
+    }
+  },
+  "features": {
+    "tow": {
+      "label": "Tow Package",
+      "short": "Tow",
+      "yes": [
+        "tow(?:ing)? (?:package|pkg)",
+        "trailer hitch",
+        "tow hitch"
+      ],
+      "no": [
+        "(?:no|without) tow(?:ing)? (?:package|pkg)"
+      ],
+      "required": true
+    },
+    "premium": {
+      "label": "Premium Package",
+      "short": "Premium",
+      "yes": [
+        "premium (?:package|pkg)",
+        "leather"
+      ],
+      "value": 1500
+    }
+  },
+  "criteria": {
+    "min_year": 2025,
+    "max_year": null,
+    "max_miles": 36000,
+    "max_price": null
+  },
+  "fair_value": {
+    "base": {
+      "2024": 34000,
+      "2025": 37000,
+      "2026": 39500,
+      "2027": 42000
+    },
+    "per_year": 2500,
+    "ref_miles": 15000,
+    "per_mile": 0.15,
+    "cpo": 1200,
+    "accident": 3000,
+    "fee_estimate": 799,
+    "trip_per_mile": 0.5
+  },
+  "distances": {
+    "online": 0,
+    "atlanta": 5,
+    "decatur": 8,
+    "marietta": 20,
+    "kennesaw": 28,
+    "lithia springs": 20,
+    "morrow": 15,
+    "gainesville": 55,
+    "athens": 70,
+    "macon": 85,
+    "birmingham": 150,
+    "greenville": 145
+  },
+  "state_distances": {
+    "GA": 120,
+    "TN": 220,
+    "AL": 180,
+    "SC": 200,
+    "NC": 260,
+    "FL": 350,
+    "KY": 380,
+    "VA": 450,
+    "MS": 350
+  },
+  "imap": {
+    "host": "imap.gmail.com",
+    "mailbox": "\"[Gmail]/All Mail\"",
+    "lookback_days": 3,
+    "accounts": [
+      {
+        "user_env": "IMAP_USER",
+        "password_env": "IMAP_PASSWORD",
+        "gmail_query": "in:anywhere -in:trash from:(facebookmail.com OR cargurus.com OR cars.com OR autotrader.com OR carvana.com OR carmax.com OR truecar.com OR edmunds.com) (frontier OR marketplace)"
+      }
+    ]
+  },
+  "ntfy": {
+    "server": "https://ntfy.sh",
+    "topic_env": "NTFY_TOPIC"
+  },
+  "ranking": {
+    "unknown_distance": 150,
+    "unknown_miles": 1000,
+    "unknown_feature": 1500,
+    "missing_feature": 6000,
+    "wrong_body": 6000,
+    "stale_days": 10,
+    "expire_days": 30
+  },
+  "web": {
+    "port": 8095
+  },
+  "alerts": {
+    "min_price_drop": 250,
+    "good_deal_score": 500
+  },
+  "trade_in": {
+    "label": "Current truck",
+    "note": "Settle the purchase price before bringing up the trade-in."
+  }
+}
