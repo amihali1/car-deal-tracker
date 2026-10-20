@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS offers (
 """
 
 FIELDS = ["source", "year", "miles", "price", "url", "vin", "dealer", "city", "distance",
-          "body", "features", "cpo", "accident", "fees_included", "notes", "email_id"]
+          "body", "features", "cpo", "accident", "fees_included", "notes", "email_id", "condition", "msrp"]
 BOOLS = ("cpo", "accident", "fees_included")
 
 # active | archived (gone, may relist) | passed (not interested) | flagged (reported wrong info)
@@ -82,6 +82,8 @@ SILENT = ("passed", "flagged", "removed")
 MIGRATIONS = [
     ("starred", "ALTER TABLE listings ADD COLUMN starred INTEGER DEFAULT 0"),
     ("email_id", "ALTER TABLE listings ADD COLUMN email_id TEXT"),
+    ("condition", "ALTER TABLE listings ADD COLUMN condition TEXT"),  # 'new' | 'used', NULL unknown
+    ("msrp", "ALTER TABLE listings ADD COLUMN msrp INTEGER"),
 ]
 
 # Fields the web UI may edit directly.
@@ -133,8 +135,13 @@ def listing_key(l):
     if l.get("listing_id"):
         return f"{l['source']}:{l['listing_id']}"
     miles = l.get("miles")
-    bucket = round(miles, -2) if miles is not None else "na"
+    # Under DEDUPE_MIN_MILES (new and demo cars) a rounded odometer would lump a dealer's whole stock
+    # into one row; the exact reading at least tells "5 mi" from "12 mi" apart.
+    bucket = "na" if miles is None else miles if miles < DEDUPE_MIN_MILES else round(miles, -2)
     who = (l.get("dealer") or l.get("city") or "").lower().replace(" ", "")[:20]
+    if miles is None and l.get("condition") == "new" and l.get("price"):
+        # A dealer's new stock without odometers: identical but for price, so the price is all we have.
+        return f"{l['source']}:{l.get('year')}:{who}:new:${l['price']}"
     if miles is None and not who:
         # Nothing but year + price: key on the price, or every such car would share one row.
         return f"{l['source']}:{l.get('year')}:${l.get('price')}"

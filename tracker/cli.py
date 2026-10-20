@@ -51,7 +51,9 @@ def _describe(cfg, l, s, reasons):
     extra = f" ({', '.join(reasons)})" if reasons else ""
     feats = l.get("features") or {}
     has = "".join(f" {f['short']}" for k, f in p.features.items() if feats.get(k))
-    return f"{l.get('year')} {p.label} {miles} ${l['price']:,} @ {where}{has} | {s:+,} vs fair{extra}"
+    new = "NEW " if l.get("condition") == "new" else ""
+    msrp = f" (MSRP ${l['msrp']:,})" if l.get("msrp") else ""
+    return f"{new}{l.get('year')} {p.label} {miles} ${l['price']:,}{msrp} @ {where}{has} | {s:+,} vs fair{extra}"
 
 
 BUNDLE_OVER = 3  # more alerts than this in one scan -> a single summary push
@@ -166,7 +168,8 @@ def cmd_check(cfg, conn, args):
     print(profile_for(cfg).summary())
     c = cfg["criteria"]
     years = f"{c['min_year']}-{c['max_year']}" if c.get("max_year") else f"{c['min_year']}+"
-    print(f"Criteria: {years}, <= {c['max_miles']:,} mi" + (f", <= ${c['max_price']:,}" if c.get("max_price") else ""))
+    print(f"Criteria: {' + '.join(c.get('conditions', ['used']))}, {years}, <= {c['max_miles']:,} mi"
+          + (f", <= ${c['max_price']:,}" if c.get("max_price") else ""))
     for account in cfg.get("imap", {}).get("accounts", []):
         print(f"Mailbox: {account.get('user')}  query: {account.get('gmail_query')}")
     print(f"ntfy topic: {'set' if cfg.get('ntfy', {}).get('topic') else 'NOT set (pushes are only logged)'}")
@@ -182,7 +185,7 @@ def cmd_add(cfg, conn, args):
     if not listings:
         sys.exit("Couldn't find a year or price in that text.")
     l = listings[0]
-    for f in ("price", "miles", "year", "distance"):
+    for f in ("price", "miles", "year", "distance", "msrp", "condition"):
         if getattr(args, f) is not None:
             l[f] = getattr(args, f)
     if args.url:
@@ -225,7 +228,7 @@ def cmd_report(cfg, conn, args):
             trend = f"  ({h[-1]['price'] - h[0]['price']:+,} since {h[0]['date']})"
         marks = {True: "+", False: "-"}
         have = " ".join(f"{p.features[k]['short']}{marks.get(r['features'].get(k), '?')}" for k in must) or "-"
-        miles = f"{r['miles']:,}" if r["miles"] is not None else "?"
+        miles = "new" if r.get("condition") == "new" else f"{r['miles']:,}" if r["miles"] is not None else "?"
         print(f"{value.score(r, cfg):>+7,} {r['price']:>8,} {value.all_in(r, cfg):>8,} {miles:>7}  {have:<10} "
               f"{r['key']} / {r['dealer'] or r['city']}{trend}")
     offers = db.offers(conn)
@@ -334,7 +337,7 @@ def cmd_notify_test(cfg, conn, args):
 
 
 def main(argv=None):
-    p = argparse.ArgumentParser(prog="tracker", description="Used-car deal tracker: alert emails -> SQLite -> push")
+    p = argparse.ArgumentParser(prog="tracker", description="Car deal tracker: alert emails -> SQLite -> push")
     p.add_argument("-v", "--verbose", action="store_true")
     sub = p.add_subparsers(dest="cmd", required=True)
 
@@ -361,6 +364,8 @@ def main(argv=None):
     s.add_argument("--miles", type=int)
     s.add_argument("--year", type=int)
     s.add_argument("--distance", type=int)
+    s.add_argument("--msrp", type=int)
+    s.add_argument("--condition", choices=("new", "used"))
     s.add_argument("--feature", action="append", metavar="NAME=yes|no",
                    help="set a configured feature, e.g. --feature tow=yes (repeatable)")
     s.set_defaults(fn=cmd_add)

@@ -24,8 +24,30 @@ def base_price(year, fv):
     return table[nearest] + (year - nearest) * fv.get("per_year", 2000)
 
 
+def is_new(listing, cfg):
+    """New cars get their own fair value (fair_value.new); unknown condition counts as used."""
+    return listing.get("condition") == "new" and bool(cfg["fair_value"].get("new"))
+
+
+def new_fair_value(listing, cfg):
+    """A new car's fair price: the listed MSRP less the usual discount when the listing quotes an MSRP
+    (it already prices in the packages), else the per-year table for new cars plus package values."""
+    fv = cfg["fair_value"]
+    nv = fv["new"]
+    if listing.get("msrp") and nv.get("msrp_discount") is not None:
+        return round(listing["msrp"] * (1 - nv["msrp_discount"]))
+    value = base_price(listing.get("year"), {"base": nv["base"], "per_year": nv.get("per_year", fv.get("per_year", 2000))})
+    feats = listing.get("features") or {}
+    for key, f in cfg.get("features", {}).items():
+        if feats.get(key):
+            value += f.get("value", 0)
+    return round(value)
+
+
 def fair_value(listing, cfg):
     fv = cfg["fair_value"]
+    if is_new(listing, cfg):
+        return new_fair_value(listing, cfg)
     value = base_price(listing.get("year"), fv)
     miles = listing.get("miles")
     if miles is None:
@@ -85,6 +107,9 @@ def matches(listing, cfg):
         return False, [f"year {year}"]
     if not listing.get("trim_ok"):
         return False, [f"not {'/'.join(profile.trims)}"]
+    condition = listing.get("condition")
+    if condition and condition not in criteria.get("conditions", ["used"]):
+        return False, [condition]
     body = listing.get("body")
     if body and profile.body_want and body not in profile.body_want:
         return False, [profile.body_label(body)]
@@ -102,7 +127,7 @@ def matches(listing, cfg):
         reasons.append("distance unknown")
     if body is None and profile.body_want:
         reasons.append("body unknown")
-    if miles is None:
+    if miles is None and not is_new(listing, cfg):
         reasons.append("miles unknown")
     for key, f in profile.features.items():
         if f["required"] and feats.get(key) is None:
@@ -123,7 +148,7 @@ def rank(listing, cfg):
     if l.get("distance") is None:
         l["distance"] = ranking["unknown_distance"]
         flags.append("distance?")
-    if l.get("miles") is None:
+    if l.get("miles") is None and not is_new(l, cfg):  # a new car's odometer doesn't move its value
         penalty += ranking["unknown_miles"]
         flags.append("miles?")
     feats = l.get("features") or {}

@@ -132,6 +132,11 @@ table.offers td.amt { text-align: right; font-weight: 650; font-variant-numeric:
     <option value="new">Newest found</option>
     <option value="drop">Biggest price drop</option>
   </select>
+  <select id="cond" aria-label="New or used">
+    <option value="">New + used</option>
+    <option value="used">Used only</option>
+    <option value="new">New only</option>
+  </select>
   <label class="toggle" id="mustToggle"><input type="checkbox" id="mustOnly"> <span id="mustLabel">Must-haves confirmed</span></label>
   <label class="toggle"><input type="checkbox" id="hideStale"> Hide stale</label>
 </div>
@@ -192,7 +197,12 @@ function applyConfig() {
   const must = mustHaves();
   $("#mustToggle").style.display = must.length ? "" : "none";
   $("#mustLabel").textContent = must.length === 1 ? `${C().features[must[0]].short} confirmed` : "Must-haves confirmed";
+  $("#cond").style.display = wantsNew() ? "" : "none";
 }
+
+// New cars are opt-in: criteria.conditions in config.json. Unknown condition counts as used.
+const wantsNew = () => (C().criteria.conditions || ["used"]).includes("new");
+const isNew = l => l.condition === "new";
 
 // Feature keys marked "required" in config.json.
 const mustHaves = () => Object.entries(C().features).filter(([, f]) => f.required).map(([k]) => k);
@@ -248,6 +258,8 @@ function chips(l) {
       shown.add(`${f.short}?`); shown.add(`no ${f.short}`);
     } else if (v) c.push(`<span class="chip yes">${esc(f.short)}</span>`);
   }
+  if (isNew(l)) c.push(`<span class="chip yes">New</span>`);
+  if (l.msrp) c.push(`<span class="chip">MSRP ${fmt$(l.msrp)}</span>`);
   if (l.cpo) c.push(`<span class="chip yes">CPO</span>`);
   if (l.accident === 1) c.push(`<span class="chip no">Accident</span>`);
   if (l.accident === 0) c.push(`<span class="chip">No accidents</span>`);
@@ -267,7 +279,7 @@ function card(l) {
   <div class="row" data-act="toggle">
     <div class="rank">${l.rank ?? "–"}</div>
     <div style="min-width:0">
-      <div class="title">${l.starred ? '<span class="star">★</span> ' : ""}${l.year ?? "?"} ${esc(C().vehicle.label)} · ${l.miles == null ? "? mi" : fmtN(l.miles) + " mi"}</div>
+      <div class="title">${l.starred ? '<span class="star">★</span> ' : ""}${isNew(l) ? "New " : ""}${l.year ?? "?"} ${esc(C().vehicle.label)} · ${l.miles == null ? (isNew(l) ? "new" : "? mi") : fmtN(l.miles) + " mi"}</div>
       <div class="meta">${esc(where(l))}</div>
       <div class="chips">${chips(l)}</div>
     </div>
@@ -327,6 +339,8 @@ function render() {
   let rows = S.listings.filter(TABS.find(t => t[0] === tab)[2]);
   if ($("#mustOnly").checked) rows = rows.filter(l => mustHaves().every(k => feat(l, k) === true));
   if ($("#hideStale").checked) rows = rows.filter(l => !l.stale);
+  const cond = wantsNew() ? $("#cond").value : "";
+  if (cond) rows = rows.filter(l => isNew(l) === (cond === "new"));
   rows = sorted(rows);
   $("#main").innerHTML = banner + (rows.length ? rows.map(card).join("") : `<div class="empty">Nothing here.</div>`)
     + (tab === "flagged" ? reportLog() : "");
@@ -381,6 +395,7 @@ function renderHelp(banner) {
   $("#main").innerHTML = banner + `<div class="card" style="padding:14px"><div class="help">
     <p><b>Fair value</b>: ${Object.entries(fv.base).map(([y, v]) => `${y} ${fmt$(v)}`).join(", ")} at ${fmtN(fv.ref_miles)} mi,
       ${fmtC(fv.per_mile)} per mile over/under.${extras.length ? " " + extras.join(", ") + "." : ""}</p>
+    ${wantsNew() && fv.new ? `<p><b>New cars</b>: ${fv.new.msrp_discount != null ? `MSRP − ${Math.round(fv.new.msrp_discount * 100)}% when the listing shows an MSRP, otherwise ` : ""}${Object.entries(fv.new.base).map(([y, v]) => `${y} ${fmt$(v)}`).join(", ")}${F.some(f => f.value) ? " plus the package values above" : ""}. Miles, CPO and accidents don't apply.</p>` : ""}
     <p><b>All-in</b> = price + ${fmt$(fv.fee_estimate)} doc fee (unless included) + ${fmtC(fv.trip_per_mile)}/mi to go get it.</p>
     <p><b>Deal score</b> = fair value − all-in. Positive = priced under fair.</p>
     <p><b>Ranking score</b> = deal score, but pessimistic about anything the alert email didn't say:
@@ -391,7 +406,7 @@ function renderHelp(banner) {
       After ${r.stale_days} days unseen it's marked stale; tap <b>✓ Still for sale</b> after checking the listing to reset it.
       After ${r.expire_days} days unseen it moves to Archived automatically (starred cars never do), and comes back if an alert shows it again.</p>
     <p><b>Not interested</b> hides a car for good; later alerts update it quietly without pushing to your phone.</p>
-    <p>Criteria: ${cr.min_year}${cr.max_year ? "–" + cr.max_year : "+"} ${esc(c.vehicle.make)} ${esc(c.vehicle.model)}${c.vehicle.trims.length ? " " + c.vehicle.trims.map(esc).join(" / ") : ""}${body ? ", " + esc(body) : ""},
+    <p>Criteria: ${wantsNew() ? ((cr.conditions || []).includes("used") ? "new or used " : "new ") : ""}${cr.min_year}${cr.max_year ? "–" + cr.max_year : "+"} ${esc(c.vehicle.make)} ${esc(c.vehicle.model)}${c.vehicle.trims.length ? " " + c.vehicle.trims.map(esc).join(" / ") : ""}${body ? ", " + esc(body) : ""},
       ≤${fmtN(cr.max_miles)} mi${cr.max_price ? `, ≤${fmt$(cr.max_price)}` : ""}${must.length ? ", " + must.map(f => esc(f.label)).join(", ") : ""}.
       Edit <code>config.json</code> on the server to change any of these numbers.</p>
   </div></div>`;
@@ -436,6 +451,9 @@ const yn = v => v == null ? "" : v ? "1" : "0";
 
 const featureFields = l => Object.entries(C().features).map(([k, f]) =>
   [`f.${k}`, f.label, "select", yn(feat(l, k)), false, null, YN]);
+const conditionFields = l => wantsNew() ? [
+  ["condition", "New or used", "select", l.condition ?? "", false, null, [["", "Unknown"], ["new", "New"], ["used", "Used"]]],
+  ["msrp", "MSRP $ (new cars)", "number", l.msrp, false, "decimal"]] : [];
 const bodyField = l => Object.keys(C().body.styles).length
   ? [["body", "Body", "select", l.body ?? "", false, null, [["", "Unknown"], ...Object.entries(C().body.styles)]]] : [];
 
@@ -445,6 +463,7 @@ function editListing(l) {
     ["miles", "Miles", "number", l.miles, false, "decimal"],
     ["distance", "Miles away (0 = delivered)", "number", l.distance, false, "decimal"],
     ["year", "Year", "number", l.year, false, "numeric"],
+    ...conditionFields(l),
     ...featureFields(l),
     ...bodyField(l),
     ["cpo", "Certified pre-owned", "select", l.cpo ? "1" : "0", false, null, YN.slice(1)],
@@ -464,6 +483,7 @@ $("#add").onclick = () => openForm("Add a listing", [
   ["miles", "Miles", "number", "", false, "decimal"],
   ["year", "Year", "number", "", false, "numeric"],
   ["distance", "Miles away", "number", "", false, "decimal"],
+  ...conditionFields({}),
   ...featureFields({}),
   ["city", "City, ST", "text", ""],
   ["dealer", "Dealer", "text", "", true],
@@ -476,7 +496,7 @@ $("#tabs").addEventListener("click", e => {
   const b = e.target.closest("[data-tab]"); if (!b) return;
   tab = b.dataset.tab; store.set("tab", tab); history.replaceState(null, "", "#" + tab); render(); window.scrollTo(0, 0);
 });
-for (const id of ["sort", "mustOnly", "hideStale"]) {
+for (const id of ["sort", "cond", "mustOnly", "hideStale"]) {
   const el = $("#" + id), saved = store.get(id, null);
   if (saved != null) el[el.type === "checkbox" ? "checked" : "value"] = saved;
   el.addEventListener("change", () => { store.set(id, el.type === "checkbox" ? el.checked : el.value); render(); });

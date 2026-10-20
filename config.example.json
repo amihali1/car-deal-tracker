@@ -74,7 +74,10 @@
     "min_year": 2025,
     "max_year": null,
     "max_miles": 36000,
-    "max_price": null
+    "max_price": null,
+    "conditions": [
+      "used"
+    ]
   },
   "fair_value": {
     "base": {
@@ -89,7 +92,16 @@
     "cpo": 1200,
     "accident": 3000,
     "fee_estimate": 799,
-    "trip_per_mile": 0.5
+    "trip_per_mile": 0.5,
+    "new": {
+      "base": {
+        "2025": 40000,
+        "2026": 41500,
+        "2027": 43000
+      },
+      "per_year": 1500,
+      "msrp_discount": 0.1
+    }
   },
   "distances": {
     "online": 0,

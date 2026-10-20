@@ -24,6 +24,8 @@ saved-search alert emails ──IMAP──▶ parser ──▶ criteria + fair v
   detection phrases, a "must have" flag and a dollar value. Nothing about the car is hard-coded.
 - **Deal score** = fair value − all-in cost. Fair value comes from a per-year price table adjusted for mileage,
   packages, CPO and accidents. All-in cost adds dealer fees and the cost of driving to get it.
+- **New cars too, if you want them.** Opt in and new listings rank alongside used ones against their own
+  fair value (MSRP minus the usual discount when the listing shows one, else your per-year new-car prices).
 - **Pessimistic ranking.** Alert emails are terse, so a listing that doesn't mention a must-have package loses
   points instead of looking like a bargain.
 - **Push alerts** via [ntfy](https://ntfy.sh): new listings, relistings and price drops, bundled when an email
