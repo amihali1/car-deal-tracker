@@ -59,7 +59,7 @@ class Profile:
         self.junk_dealer = re.compile(
             r"privacy|conditions|terms|statement|unsubscribe|copyright|rights reserved"
             r"|view details|search|wallet|dealer fees|price drop|includes"
-            rf"|^(?:new|used) (?:cars|{re.escape(self.make)})$", re.I)  # email nav/buttons
+            rf"|^(?:new|used|certified|pre-?owned)(?: \d{{4}})? (?:cars|{re.escape(self.make)})$", re.I)  # nav, titles
 
         body = cfg.get("body") or {}
         self.body_want = body.get("want", [])

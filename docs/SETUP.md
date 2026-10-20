@@ -138,6 +138,12 @@ then set them on the dashboard's Edit form.
 
 `max_miles` is a good place to encode "still under factory warranty" (e.g. 36,000 for a 3-year/36k warranty).
 
+**New cars** are off by default. To rank new cars alongside used ones, add `"conditions": ["used", "new"]` (or
+`["new"]` for new only) and give new cars their own prices in `fair_value.new` (step 5). Then save a
+**new-car** search on each site too (most sites keep new and used in separate searches; Cars.com and Autotrader
+alerts name the search "Used …"/"New …", which the tracker reads). A listing is new when it says so ("New 2026 …",
+"Condition: New", an MSRP) or comes from a new-only search; when nothing says, it counts as used.
+
 `python -m tracker check` validates the config and prints what it compiled. A typo in a section or key name is
 reported with the exact key instead of crashing mid-scan.
 
@@ -194,6 +200,22 @@ The deal score is only as good as these numbers, and they're market- and model-s
 | `accident` | Discount for a reported accident | 5–10% of price is a common rule of thumb |
 | `fee_estimate` | Dealer doc fee added when the price doesn't include fees | Your state's typical doc fee |
 | `trip_per_mile` | Cost per mile of distance to go get the car | Fuel + your time, round trip |
+
+New cars (only with `"new"` in `criteria.conditions`) get their own fair value; miles, CPO and accidents don't
+apply to them:
+
+```json
+"fair_value": {
+  ...,
+  "new": {"base": {"2025": 40000, "2026": 41500}, "msrp_discount": 0.10}
+}
+```
+
+| Key | Meaning | How to pick it |
+|---|---|---|
+| `new.base` | Typical selling price of a new one per model year, with your trim and must-haves (feature `value`s are added on top) | Advertised prices of 10-20 new listings after dealer discounts and rebates, before fees and tax |
+| `new.msrp_discount` | When a listing quotes an MSRP, fair value is MSRP × (1 − this) instead; the MSRP already includes the packages | Typical discount off sticker in those listings; leave it out to always use `base` |
+| `new.per_year` | Optional; years missing from `new.base` (defaults to `per_year`) | |
 
 **Deal score** = fair value − (price + fees + distance × `trip_per_mile`). Positive means priced under fair value;
 `alerts.good_deal_score` sets the threshold for high-priority pushes.

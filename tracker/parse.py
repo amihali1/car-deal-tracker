@@ -60,6 +60,15 @@ STREET_TAIL = re.compile(r"\b(?:Street|St|Avenue|Ave|Road|Rd|Court|Ct|Boulevard|
                          r"Highway|Hwy|Pike|Place|Pl|Circle|Cir|Trail|Tr)\.?\s+")
 # National used-car chains name the store by city: "CarMax Naperville".
 CHAIN = re.compile(r"\b(?:CarMax|Carvana|DriveTime|AutoNation)(?:\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)?\b")
+# New vs used. Sites put the condition right before the title ("New 2026 Nissan Frontier",
+# "Used 2025 ..."), or as a "Condition: New" label.
+CONDITION_LEAD = re.compile(r"\b(new|used|certified(?:\s+pre-?owned)?|pre-?owned)\s+$", re.I)
+CONDITION_LABEL = re.compile(r"\bcondition\s*:?\s*(new|used|certified|pre-?owned)\b", re.I)
+# The saved search's own condition: Cars.com names it "Used Nissan Frontier for Sale" and lists filters
+# as "• Used •"; Autotrader footers say "| Used |".
+SEARCH_CONDITION = re.compile(r"[•|]\s*(new|used)\s*[•|]|\b(new|used) [\w\- ]{1,30}? for sale\b", re.I)
+# "MSRP $45,995" or "$45,995 MSRP". Never the price; "Original MSRP" (group 1) on a used listing isn't an MSRP either.
+MSRP = re.compile(r"(original\s+)?\bMSRP\s*:?\s*\$\s?(\d{1,3}),?(\d{3})(?!\d)|\$\s?(\d{1,3}),?(\d{3})\s*MSRP\b", re.I)
 
 
 class _Flattener(HTMLParser):
@@ -130,20 +139,30 @@ def parse_chunk(chunk, profile):
     model_ok = bool(profile.mentions.search(c))
     out = {"year": None, "trim_ok": model_ok and profile.trim_ok(c), "price": None, "miles": None,
            "vin": None, "city": None, "dealer": None, "body": None, "features": {},
-           "cpo": False, "accident": None, "fees_included": False}
+           "cpo": False, "accident": None, "fees_included": False, "condition": None, "msrp": None}
 
     m = profile.heading.search(c) or re.search(r"\b(19[89]\d|20[0-4]\d)\b", c)
     if m:
         out["year"] = int(m.group(1))
 
-    # Price: first $xx,xxx in the configured plausible range. "was $X" / "price drop of $X" skipped.
+    msrps = list(MSRP.finditer(c))
+    # Price: first $xx,xxx in the configured plausible range. "was $X" / "price drop of $X" / MSRPs skipped.
     for m in PRICE.finditer(c):
         before = c[max(0, m.start() - 20):m.start()].lower()
         if re.search(r"(was|drop(?:ped)?(?: of)?|save|off|below|under|over|est\.?|/mo|monthly)\s*$", before):
             continue
+        if any(x.start() <= m.start() < x.end() for x in msrps):
+            continue
         val = int(m.group(1) + m.group(2))
         if profile.price_min <= val <= profile.price_max:
             out["price"] = val
+            break
+
+    for m in msrps:
+        val = int((m.group(2) or m.group(4)) + (m.group(3) or m.group(5)))
+        if not m.group(1) and profile.price_min <= val <= profile.price_max:
+            out["msrp"] = val
+            out["price"] = out["price"] or val  # no discounted price shown: MSRP is the asking price
             break
 
     m = MILEAGE_LABEL.search(c)
@@ -183,6 +202,7 @@ def parse_chunk(chunk, profile):
     out["body"] = profile.body_of(c)
     out["features"] = profile.features_of(c)
     out["cpo"] = bool(profile.certified.search(c))
+    out["condition"] = condition_of(c, profile, out)
     if re.search(r"no accidents?|0 accidents|accident[- ]free|clean (carfax|history)", low):
         out["accident"] = False
     elif re.search(r"accident reported|\d+ accidents?|damage reported", low):
@@ -190,6 +210,31 @@ def parse_chunk(chunk, profile):
     out["fees_included"] = bool(re.search(r"(includes|including|incl\.?)\s+(all\s+)?(dealer\s+)?fees"
                                           r"|no additional (dealer )?fees", low))
     return out
+
+
+def condition_of(c, profile, fields):
+    """'new', 'used' or None (unknown)."""
+    m = None
+    h = profile.heading.search(c)
+    if h:
+        m = CONDITION_LEAD.search(c[max(0, h.start() - 30):h.start()])
+    m = m or CONDITION_LABEL.search(c)
+    if m:
+        return "new" if m.group(1).lower() == "new" else "used"
+    if fields["cpo"]:
+        return "used"
+    if fields["msrp"]:
+        return "new"  # used listings don't quote an MSRP
+    return None
+
+
+def search_condition(text):
+    """'new' or 'used' when the saved search the email is for asks for only one ("Used Nissan Frontier
+    for Sale", "200 mi of 30303 • Used • Min year"), for listings that don't say. Else None."""
+    if re.search(r"\bnew\s*(?:and|&|/|or)\s*used\b", text, re.I):
+        return None
+    found = {(a or b).lower() for a, b in SEARCH_CONDITION.findall(text)}
+    return found.pop() if len(found) == 1 else None
 
 
 def _listing_id(url):
@@ -212,7 +257,12 @@ def split_listings(text, links, profile):
             seen.add(m.group(0))
             anchors.append((off, m.group(0)))
 
-    heads = [m.start() for m in profile.heading.finditer(text)]
+    heads = []
+    for m in profile.heading.finditer(text):
+        # Start at the condition word that leads the title, so "Used" doesn't end the previous car's chunk.
+        s = m.start()
+        c = CONDITION_LEAD.search(text[max(0, s - 30):s])
+        heads.append(max(0, s - 30) + c.start() if c else s)
     if heads and PRICE_LEAD.search(text[max(0, heads[0] - 120):heads[0]]):
         # Price-above-title layout: start each chunk at the price that leads its heading,
         # otherwise every car gets the next car's price.
@@ -300,7 +350,9 @@ def parse_email_bytes(raw, profile):
     links = [(off + len(prefix), href) for off, href in links]
     meta["mentions_model"] = bool(profile.mentions.search(prefix + text))
     listings = parse_text(prefix + text, profile, source, links)
+    search = search_condition(prefix + text)
     for l in listings:
+        l["condition"] = l["condition"] or search
         l["email_id"] = meta["message_id"] or None
         l["seen"] = meta["day"]  # stored as first/last seen, so a re-scan doesn't make old alerts look fresh
     return meta, listings

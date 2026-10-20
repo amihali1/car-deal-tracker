@@ -97,7 +97,7 @@ def _coerce(changes):
             v = None
         if k == "price" and v is None:
             continue  # every listing needs a price; blank means "leave it"
-        if k in ("price", "miles", "year", "distance") and v is not None:
+        if k in ("price", "miles", "year", "distance", "msrp") and v is not None:
             v = int(str(v).replace(",", "").replace("$", "").strip())
         out[k] = v
     return out

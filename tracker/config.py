@@ -58,6 +58,12 @@ def validate(cfg):
         problems += [f"missing '{section}.{k}'" for k in keys if k not in cfg[section]]
     if not cfg.get("fair_value", {}).get("base"):
         problems.append("'fair_value.base' needs at least one \"year\": price entry")
+    conditions = cfg.get("criteria", {}).get("conditions", ["used"])
+    problems += [f"'criteria.conditions' has '{c}'; use \"new\" and/or \"used\"" for c in conditions
+                 if c not in ("new", "used")]
+    if "new" in conditions and not cfg.get("fair_value", {}).get("new", {}).get("base"):
+        problems.append("'criteria.conditions' includes \"new\", so 'fair_value.new.base' needs at least one "
+                        "\"year\": price entry")
     for name, feat in cfg.get("features", {}).items():
         if not feat.get("yes"):
             problems.append(f"feature '{name}' needs a 'yes' list of phrases")
